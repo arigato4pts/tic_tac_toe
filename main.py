@@ -9,25 +9,32 @@ CELL_SIZE = WIDTH // 3
 PLAYER_SYMBOL = "X"
 AI_SYMBOL = "O"
 
-LINE_COLOR = (0, 0, 0)
-BACKGROUND_COLOR = (255, 255, 255)
+BLACK_COLOR = (0, 0, 0)
+WHITE_COLOR = (255, 255, 255)
+BUTTON_COLOR = (0, 255, 0)
+
+BUTTON_WIDTH, BUTTON_HEIGHT = 200, 50
 
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Tic-Tac-Toe")
+FONT = pygame.font.Font(None, 50)
+BUTTON_FONT = pygame.font.Font(None, 30)
 
 class Board:
     def __init__(self):
         self.cells = [["" for _ in range(3)] for _ in range(3)]
+
         self.x_img = pygame.image.load("krest.png")
         self.o_img = pygame.image.load("krug.png")
+
         self.x_img = pygame.transform.scale(self.x_img, (CELL_SIZE, CELL_SIZE))
         self.o_img = pygame.transform.scale(self.o_img, (CELL_SIZE, CELL_SIZE))
 
     def draw(self):
-        screen.fill(BACKGROUND_COLOR)
+        screen.fill(WHITE_COLOR)
         for i in range(1, 3):
-            pygame.draw.line(screen, LINE_COLOR, (CELL_SIZE * i, 0), (CELL_SIZE * i, HEIGHT), 2)
-            pygame.draw.line(screen, LINE_COLOR, (0, CELL_SIZE * i), (WIDTH, CELL_SIZE * i), 2)
+            pygame.draw.line(screen, BLACK_COLOR, (CELL_SIZE * i, 0), (CELL_SIZE * i, HEIGHT), 2)
+            pygame.draw.line(screen, BLACK_COLOR, (0, CELL_SIZE * i), (WIDTH, CELL_SIZE * i), 2)
         self.draw_symbols()
 
     def draw_symbols(self):
@@ -106,32 +113,57 @@ class Game:
         self.winner = None
         self.game_over = False
 
-game = Game()
-running = True
 
-while running:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
+class TicTacToeApp:
+    def __init__(self):
+        self.game = Game()
+        self.running = True
+        self.reset_button_rect = pygame.Rect(
+            (WIDTH - BUTTON_WIDTH) // 2,
+            (HEIGHT - BUTTON_HEIGHT) // 2,
+            BUTTON_WIDTH,
+            BUTTON_HEIGHT
+        )
 
-        elif event.type == pygame.MOUSEBUTTONDOWN:
-            if not game.game_over and game.turn == "player":
-                x, y = event.pos[0] // CELL_SIZE, event.pos[1] // CELL_SIZE
-                game.player_move(x, y)
+    def run(self):
+        while self.running:
+            self.handle_events()
+            if not self.game.game_over and self.game.turn == "ai":
+                self.game.ai_move()
+            self.draw()
+            pygame.display.flip()
+        pygame.quit()
 
-    if not game.game_over and game.turn == "ai":
-        game.ai_move()
-    if game.game_over:
-        if game.winner == "Player":
-            print("Победил игрок!")
-        elif game.winner == "AI":
-            print("Победил AI!")
-        elif game.winner == "Tie":
-            print("Ничья!")
-        else:
-            print("Победителя нет.")
-        running = False
-    game.board.draw()
-    pygame.display.flip()
+    def handle_events(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.running = False
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if self.game.game_over and self.reset_button_rect.collidepoint(event.pos):
+                    self.game.reset()
+                elif not self.game.game_over and self.game.turn == "player":
+                    x, y = event.pos[0] // CELL_SIZE, event.pos[1] // CELL_SIZE
+                    self.game.player_move(x, y)
 
-pygame.quit()
+    def draw(self):
+        self.game.board.draw()
+        if self.game.game_over:
+            self.draw_winner()
+            self.draw_reset_button()
+
+    def draw_winner(self):
+        text = FONT.render(
+            f"{self.game.winner} Wins!" if self.game.winner != "Tie" else "It's a Tie!",
+            True, BLACK_COLOR)
+        rect = text.get_rect(center=(WIDTH // 2, HEIGHT // 4))
+        screen.blit(text, rect)
+
+    def draw_reset_button(self):
+        pygame.draw.rect(screen, BUTTON_COLOR, self.reset_button_rect)
+        text = BUTTON_FONT.render("Reset", True, WHITE_COLOR)
+        screen.blit(text, text.get_rect(center=self.reset_button_rect.center))
+
+
+if __name__ == "__main__":
+    app = TicTacToeApp()
+    app.run()
