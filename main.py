@@ -20,6 +20,7 @@ pygame.display.set_caption("Tic-Tac-Toe")
 FONT = pygame.font.Font(None, 50)
 BUTTON_FONT = pygame.font.Font(None, 30)
 
+
 class Board:
     def __init__(self):
         self.cells = [["" for _ in range(3)] for _ in range(3)]
@@ -124,6 +125,8 @@ class TicTacToeApp:
             BUTTON_WIDTH,
             BUTTON_HEIGHT
         )
+        self.center_click_count = 0
+        self.egg_icons_loaded = False
 
     def run(self):
         while self.running:
@@ -134,17 +137,6 @@ class TicTacToeApp:
             pygame.display.flip()
         pygame.quit()
 
-    def handle_events(self):
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                self.running = False
-            elif event.type == pygame.MOUSEBUTTONDOWN:
-                if self.game.game_over and self.reset_button_rect.collidepoint(event.pos):
-                    self.game.reset()
-                elif not self.game.game_over and self.game.turn == "player":
-                    x, y = event.pos[0] // CELL_SIZE, event.pos[1] // CELL_SIZE
-                    self.game.player_move(x, y)
-
     def draw(self):
         self.game.board.draw()
         if self.game.game_over:
@@ -152,6 +144,11 @@ class TicTacToeApp:
             self.draw_reset_button()
 
     def draw_winner(self):
+        if self.egg_icons_loaded:
+            if self.game.winner == 'Player':
+                self.game.winner = 'PEARTO'
+            elif self.game.winner == 'AI':
+                self.game.winner = 'PEARKU'
         text = FONT.render(
             f"{self.game.winner} Wins!" if self.game.winner != "Tie" else "It's a Tie!",
             True, BLACK_COLOR)
@@ -162,6 +159,34 @@ class TicTacToeApp:
         pygame.draw.rect(screen, BUTTON_COLOR, self.reset_button_rect)
         text = BUTTON_FONT.render("Reset", True, WHITE_COLOR)
         screen.blit(text, text.get_rect(center=self.reset_button_rect.center))
+
+    def handle_events(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.running = False
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                x, y = event.pos[0] // CELL_SIZE, event.pos[1] // CELL_SIZE
+                if x == 1 and y == 1:
+                    self.center_click_count += 1
+                    if self.center_click_count >= 39 and not self.egg_icons_loaded:
+                        self.load_alternate_icons()
+                        print("🎉 Пасхалка активирована! Иконки заменены.")
+                else:
+                    self.center_click_count = 0
+
+                if self.game.game_over and self.reset_button_rect.collidepoint(event.pos):
+                    self.game.reset()
+                elif not self.game.game_over and self.game.turn == "player":
+                    self.game.player_move(x, y)
+
+    def load_alternate_icons(self):
+        self.game.board.x_img = pygame.transform.scale(
+            pygame.image.load("pearto.png"), (CELL_SIZE, CELL_SIZE)
+        )
+        self.game.board.o_img = pygame.transform.scale(
+            pygame.image.load("pearku.png"), (CELL_SIZE, CELL_SIZE)
+        )
+        self.egg_icons_loaded = True
 
 
 if __name__ == "__main__":
